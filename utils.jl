@@ -1333,7 +1333,7 @@ function plot_single_city_comparison_simple(
     # --- 3. Aggiungi un piccolo spazio tra i due plot ---
     colgap!(fig.layout, 1, 50)
 
-    display(fig)
+    #display(fig)
     return fig
 end
 
