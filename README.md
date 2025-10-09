@@ -17,6 +17,7 @@ The core of the model includes agent definitions, environment setup, simulation 
 - `examples.ipynb` – Jupyter notebook with a simple simulation run and example plots.
 - `Project.toml` / `Manifest.toml` – define the Julia environment for reproducibility.
 - `README.md` – project description and usage instructions.
+- `LICENSE` – open-source license (MIT) under which this project is distributed.
 
 ## Getting Started
 
