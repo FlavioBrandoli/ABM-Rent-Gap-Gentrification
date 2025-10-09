@@ -35,7 +35,7 @@ git clone https://github.com/FlavioBrandoli/ABM-Rent-Gap-Gentrification.git
 cd ABM-Rent-Gap-Gentrification
 ````
 
-Open Julia and activate the environment:
+Open Julia and activate the project environment:
 
 ```julia
 using Pkg
@@ -43,14 +43,12 @@ Pkg.activate(".")
 Pkg.instantiate()
 ```
 
-Now you can include the files and run your simulations. For example:
+This will install all required dependencies listed in the `Project.toml` and `Manifest.toml` files.
 
-```julia
-include("model.jl")
-# define and run your model...
-```
+To run simulations or explore the model:
 
-Or explore the `examples.ipynb` notebook for a basic simulation and some output plots.
+👉 Refer to the [`examples.ipynb`](examples.ipynb) notebook, which includes all necessary `using` and `include` statements, as well as an example workflow for initializing and running the model.
+
 
 ## Theoretical Background
 
