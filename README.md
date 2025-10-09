@@ -52,9 +52,11 @@ To run simulations or explore the model:
 
 ## Theoretical Background
 
-The model is based on the rent-gap theory (Smith, 1979), which explains gentrification as a process driven by the difference between actual and potential ground rent. Agents interact spatially, with behaviors designed to reflect investment dynamics, affordability, and displacement mechanisms.
+The model is based on the rent-gap theory (Smith, 1979), which explains inner-city gentrification (particularly in U.S. cities) as a process driven by the difference between actual and potential ground rent. According to this theory, as cities expand, new buildings are constructed on the outskirts, while little to no investment is made in the inner-city housing stock, which gradually deteriorates.
+As a result, the urban population becomes spatially divided: high-income residents settle in the newly developed suburbs, while low-income residents are increasingly concentrated in the neglected inner-city areas. This segregation persists until the gap between the potential ground rent and the actual rent being capitalized in the inner city becomes wide enough to justify profitable reinvestment. At that point, capital begins to flow back into these areas, attracting high-income residents and triggering gentrification.
 
 > A more detailed explanation of the model can be found in the associated MSc thesis (link coming soon).
+> For an explanation of the model's structure and agent behavior, see the `examples.ipynb` notebook.
 
 ## License
 
