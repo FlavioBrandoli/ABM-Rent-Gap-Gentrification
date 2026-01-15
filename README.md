@@ -65,5 +65,7 @@ This project is licensed under the MIT License. See the `LICENSE` file for detai
 ## Author
 
 Flavio Brandoli
+
 Politecnico di Torino – MSc Physics of Complex Systems
+
 Complexity Science Hub Vienna – Thesis Host Institution
