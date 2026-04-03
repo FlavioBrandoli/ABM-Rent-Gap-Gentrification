@@ -286,7 +286,7 @@ function initialize_model(;
         :rent_age_decay => rent_age_decay, 
         :neighborhood_radius => 1, 
         :utility_weights_low => (financial=0.35, amenity=0.25, age=0.25, center=0.15, neighborhood=0.0), 
-        :utility_weights_high => (financial=0.25, amenity=0.21, age=0.36, center=0.18, neighborhood=0.0), 
+        :utility_weights_high => (financial=0.25, amenity=0.25, age=0.35, center=0.15, neighborhood=0.0), 
         
         :step => 0, 
         :rng => rng, 
