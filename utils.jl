@@ -1337,6 +1337,63 @@ function plot_single_city_comparison_simple(
     return fig
 end
 
+function plot_single_city_public(
+    model_after::ABM, 
+    plot_type::Symbol;
+    title_fontsize::Int = 28
+)
+    # --- 1. Preparazione dei dati (invariata) ---
+    title_fragment = ""
+    primary_value_field_symbol = :house_age 
+    plot_range_field_primary_symbol = :plot_age_range
+
+    if plot_type == :age
+        title_fragment = "House Age"
+        primary_value_field_symbol = :house_age
+        plot_range_field_primary_symbol = :plot_age_range
+    elseif plot_type == :cap_rent
+        title_fragment = "Capitalized Rent"
+        primary_value_field_symbol = :capitalized_rent
+        plot_range_field_primary_symbol = :plot_rent_range
+    elseif plot_type == :pot_rent
+        title_fragment = "Potential Rent"
+        primary_value_field_symbol = :potential_rent
+        plot_range_field_primary_symbol = :plot_potential_rent_range
+    end
+
+    println("Generazione plot di confronto per: $title_fragment...")
+    
+    # Definisci le funzioni helper per i colori e le heatmap (come prima)
+    #ac_before = _get_agent_color_func(model_before)
+    ac_after = _get_agent_color_func(model_after)
+    #vis_data_before = _prepare_heatmap_visuals(model_before, plot_type, primary_value_field_symbol, plot_range_field_primary_symbol)
+    vis_data_after = _prepare_heatmap_visuals(model_after, plot_type, primary_value_field_symbol, plot_range_field_primary_symbol)
+
+    # --- 2. Creazione della Figura con Layout Verticale Semplice ---
+    fig = Figure(size = (800, 800))
+
+    
+    # --- Plot "Dopo" ---
+    ax_after = Axis(fig[1, 1], 
+                    #title = "$title_fragment (After, Step $(model_after.step))", 
+                    titlesize = title_fontsize, 
+                    aspect = DataAspect())
+                    
+    abmplot!(ax_after, model_after;
+             agent_color=ac_after, agent_size=12,
+             heatarray=vis_data_after.heatarray, heatkwargs=vis_data_after.heatkwargs,
+             add_colorbar=false)
+    hidedecorations!(ax_after)
+    r_start, r_end, c_start, c_end = get_inner_city_bounds(model_after)
+    lines!(ax_after, [c_start - 0.5, c_end + 0.5, c_end + 0.5, c_start - 0.5, c_start - 0.5],
+           [r_start - 0.5, r_start - 0.5, r_end + 0.5, r_end + 0.5, r_start - 0.5],
+           color = :black, linewidth = 2, linestyle = :dash)
+    
+    # --- 3. Aggiungi un piccolo spazio tra i due plot ---
+    
+    return fig
+end
+
 
 function _get_agent_color_func(model_state::ABM)
     all_incomes_list = [a.income_value for a in allagents(model_state) if hasproperty(a, :income_value) && isa(a.income_value, Real)]
@@ -1681,4 +1738,341 @@ function get_vacant_public_housing_positions(model::ABM)
         end
     end
     return vacant_ph_houses
+end
+
+
+function plot_cluster_trends3(clustered_df::DataFrame, real_df::DataFrame, real_label_map::Dict)
+    println("--- Generating Shaded Cluster Envelopes with Real Data Overlay ---")
+
+    cluster_colors = Dict(1 => :blue, 2 => :red, 3 => :green, 0 => :black)
+    
+    # 1. Inizializzazione Plot
+    p_rent = Plots.plot(xlabel="Year", ylabel="Rent Percentage Growth", 
+                        legend=:topleft, guidefontsize=16, tickfontsize=12, legendfontsize=10)
+    p_income = Plots.plot(xlabel="Year", ylabel="Income Percentage Growth", 
+                          legend=:topleft, guidefontsize=16, tickfontsize=12, legendfontsize=10)
+
+    # 2. SFONDO: Aree dei Cluster (Ribbons)
+    for group in groupby(clustered_df, :cluster)
+        cluster_id = first(group).cluster
+        colore_base = get(cluster_colors, cluster_id, :gray)
+
+        # Calcolo dell'inviluppo per RENT
+        # Trasformiamo la colonna di array in una matrice (Anni x Simulazioni)
+        matrice_rent = hcat(group.rent_series...)
+        min_rent = minimum(matrice_rent, dims=2)[:]
+        max_rent = maximum(matrice_rent, dims=2)[:]
+        
+        # Calcolo dell'inviluppo per INCOME
+        matrice_income = hcat(group.income_series...)
+        min_income = minimum(matrice_income, dims=2)[:]
+        max_income = maximum(matrice_income, dims=2)[:]
+
+        anni_sim = 2011:(2011 + length(min_rent) - 1)
+
+        # Disegniamo l'area sfumata (fillrange)
+        Plots.plot!(p_rent, anni_sim, min_rent, fillrange=max_rent, 
+                    fillalpha=0.25, color=colore_base, linealpha=0, label=false)
+        
+        Plots.plot!(p_income, anni_sim, min_income, fillrange=max_income, 
+                    fillalpha=0.25, color=colore_base, linealpha=0, label=false)
+    end
+
+    
+    # 3. PRIMO PIANO: Dati Reali (Palette Rainbow come richiesto)
+    for col in names(real_df, r"indexed_.*_rent")
+        key = replace(replace(string(col), "indexed_" => ""), "_rent" => "")
+        label = get(real_label_map, key, key)
+        style = contains(label, "Control") ? :dot : :solid
+        
+        Plots.plot!(p_rent, real_df.Year, real_df[!, col], 
+                    label=label, lw=3, linestyle=style, palette=:rainbow, alpha=1.0)
+    end
+
+    for col in names(real_df, r"indexed_.*_income")
+        key = replace(replace(string(col), "indexed_" => ""), "_income" => "")
+        label = get(real_label_map, key, key)
+        style = contains(label, "Control") ? :dot : :solid
+        
+        Plots.plot!(p_income, real_df.Year, real_df[!, col], 
+                    label=label, lw=3, linestyle=style, palette=:rainbow, alpha=1.0)
+    end
+
+    display(p_rent)
+    display(p_income)
+    
+    return p_rent, p_income
+end
+
+
+function run_multi_seed_scenario_new(
+    seeds_to_run::Vector{Int},
+    model_step_func::Function;
+    
+    # Parametri di esecuzione (invariati)
+    n_steps_term::Int = 15,
+    n_steps_dyn::Int = 112,
+    public_housing_fraction = 0.15,
+    public_housing_negative_spillover_boost = 2.0
+
+)
+    println("--- Avvio esecuzione per: $(string(model_step_func)) ---")
+    
+    all_runs_model_metrics_df = DataFrame()
+    all_runs_quadrant_df = DataFrame()
+
+    for seed_val in seeds_to_run
+        print("  -> Seed: $seed_val...")
+        
+        # --- MODIFICA CHIAVE: Chiama `initialize_model` con i parametri corretti ---
+        model_instance = initialize_model(
+            seed = seed_val, 
+            public_housing_fraction = public_housing_fraction,
+            public_housing_negative_spillover_boost = public_housing_negative_spillover_boost
+            # Nota: Non passiamo più N_agents, income_distribution, o w_poor
+        )
+        
+        # Il resto della logica rimane identico
+        _, model_metrics_term, quadrant_df_term, thermalized_model = run_simulation_phase_and_collect_data(model_instance, n_steps_term, agent_step!, model_step_termalizzazione!, 0, "Term")
+        _, model_metrics_dyn, quadrant_df_dyn, _ = run_simulation_phase_and_collect_data(thermalized_model, n_steps_dyn, agent_step!, model_step_func, n_steps_term, "Dyn")
+        
+        combined_model_df = vcat(model_metrics_term, model_metrics_dyn[2:end, :]); combined_model_df.seed .= seed_val
+        append!(all_runs_model_metrics_df, combined_model_df)
+
+        combined_quadrant_df = vcat(quadrant_df_term, quadrant_df_dyn[2:end, :]); combined_quadrant_df.seed .= seed_val
+        append!(all_runs_quadrant_df, combined_quadrant_df)
+        
+        print(" Fatto.\n")
+    end
+    
+    return all_runs_model_metrics_df, all_runs_quadrant_df
+end
+
+function run_simulation_phase_and_collect_data(
+    input_model::ABM,
+    n_steps_for_phase::Int,
+    current_agent_step!::Function,
+    current_model_step!::Function,
+    initial_step_for_data::Int = 0,
+    phase_label::String = "Fase Sconosciuta"
+)
+
+    println("--- Inizio $phase_label (Steps da $(initial_step_for_data + 1) a $(initial_step_for_data + n_steps_for_phase)) ---")
+    
+    # Dati agenti
+    #=history_agent_step = Int[]
+    history_agent_id = Int[]
+    history_agent_type = Symbol[]
+    history_agent_utility = Float64[]
+    history_agent_pos = NTuple{2, Int}[]=#
+    
+    # Dati modello (esistenti)
+    history_model_step = Int[]
+    history_ratio_lh_inner = Float64[]
+    history_ratio_lh_suburbs = Float64[]
+    history_density_total_inner = Float64[]
+    history_density_total_suburbs = Float64[]
+    history_n_low_inner = Int[]
+    history_n_high_inner = Int[]
+    history_n_low_suburbs = Int[]
+    history_n_high_suburbs = Int[]
+    
+    # Dati affitti
+    history_mean_inner_city_rent = Float64[]
+    history_median_inner_city_rent = Float64[]
+    history_n_houses_inner_city_rent_calc = Int[]
+
+    history_developer_status = Symbol[]
+
+    # Metriche di reddito
+    history_mean_income_inner_city = Float64[]
+    history_median_income_inner_city = Float64[]
+
+    # Metriche di segregazione
+    history_neighbour_segregation_index = Float64[]
+    history_amenity_segregation_index_low = Float64[]
+    history_amenity_segregation_index_high = Float64[]
+
+    history_agent_zero_sat = Int[]
+
+    # --- NUOVI ARRAY STORICO PER DATI QUADRANTE ---
+    history_quadrant_step = Int[]
+    history_quadrant_coords_x = Int[]
+    history_quadrant_coords_y = Int[]
+    history_quadrant_mean_amenity = Float64[] # Amenity media pre-calcolata del quadrante
+    history_quadrant_n_low = Int[]
+    history_quadrant_n_high = Int[]
+
+    #history_dissimilarity_index = Float64[]
+    #history_exposure_index = Float64[]
+
+    # --- FUNZIONE HELPER INTERNA PER LA RACCOLTA DEI DATI (incluse le metriche dei quadranti) ---
+    function _collect_all_data_for_current_step(model_to_sample, current_step_number)
+        
+        #=
+        # 1. Dati a livello di Agente
+        current_step_zero_utility_count = 0
+        for agent_obj in allagents(model_to_sample)
+            push!(history_agent_step, current_step_number)
+            push!(history_agent_id, agent_obj.id)
+            push!(history_agent_type, agent_obj isa LowIncome ? :LowIncome : :HighIncome)
+            agent_utility = calculate_total_utility(agent_obj, agent_obj.pos, model_to_sample)
+            push!(history_agent_utility, agent_utility)
+            push!(history_agent_pos, agent_obj.pos) # Salva la posizione
+            
+            if agent_utility == 0.0
+                current_step_zero_utility_count += 1
+            end
+        end=#
+        
+        #push!(history_agent_zero_sat, current_step_zero_utility_count)
+
+        # 2. Dati a livello di Modello
+        metrics = calculate_urban_metrics(model_to_sample)
+        push!(history_model_step, current_step_number)
+        push!(history_ratio_lh_inner, metrics.ratio_lh_inner)
+        push!(history_ratio_lh_suburbs, metrics.ratio_lh_suburbs)
+        push!(history_density_total_inner, metrics.density_total_inner)
+        push!(history_density_total_suburbs, metrics.density_total_suburbs)
+        push!(history_n_low_inner, metrics.n_low_inner)
+        push!(history_n_high_inner, metrics.n_high_inner)
+        push!(history_n_low_suburbs, metrics.n_low_suburbs)
+        push!(history_n_high_suburbs, metrics.n_high_suburbs)
+        
+        # MODIFICA: ACCESSO DIRETTO ALLA PROPRIETÀ developer_activity_status
+        if hasproperty(model_to_sample, :developer_activity_status)
+             push!(history_developer_status, model_to_sample.developer_activity_status)
+        else
+            push!(history_developer_status, :undefined) 
+        end
+        
+        push!(history_mean_income_inner_city, metrics.mean_income_inner_city)
+        push!(history_median_income_inner_city, metrics.median_income_inner_city)
+
+        rent_metrics = calculate_inner_city_rent_metric(model_to_sample)
+        push!(history_mean_inner_city_rent, rent_metrics.mean_inner_city_rent)
+        push!(history_median_inner_city_rent, rent_metrics.median_inner_city_rent)
+        push!(history_n_houses_inner_city_rent_calc, rent_metrics.n_houses_inner_city_for_rent_calc)
+        
+        push!(history_neighbour_segregation_index, calculate_neighbour_segregation_index(model_to_sample))
+        low_amenity_score, high_amenity_score = calculate_amenity_segregation_index(model_to_sample)
+        push!(history_amenity_segregation_index_low, low_amenity_score)
+        push!(history_amenity_segregation_index_high, high_amenity_score)
+
+        # 3. --- Raccolta Dati per Quadrante ---
+        # MODIFICA: ACCESSO DIRETTO ALLA PROPRIETÀ mean_quadrant_amenities_map
+        mean_quadrant_amenities_map = model_to_sample.mean_quadrant_amenities_map # <--- MODIFICATO
+        
+        # MODIFICA: ACCESSO DIRETTO ALLA PROPRIETÀ grid_dims (se la tua initialize_model la salva così)
+        # Se invece model.grid_dims NON esiste e la dimensione della griglia è sempre la stessa,
+        # puoi usare la variabile globale 'abm_grid_dims' o 'dims' passata al modello.
+        # Oppure, se 'grid_dims' è una proprietà del modello, la recuperi direttamente:
+        grid_dims = model_to_sample.grid_dims # <--- MODIFICATO, assuming it's a direct property
+                                              # (it's what you put into `properties[:grid_dims]`)
+        
+        current_step_quadrant_counts = Dict{NTuple{2, Int}, Dict{Symbol, Int}}()
+        
+        quadrant_size_x = div(grid_dims[1], 4)
+        quadrant_size_y = div(grid_dims[2], 4)
+
+        for agent_obj in allagents(model_to_sample)
+            qx = ceil(Int, agent_obj.pos[1] / quadrant_size_x)
+            qy = ceil(Int, agent_obj.pos[2] / quadrant_size_y)
+            quadrant_coords = (qx, qy)
+
+            if !haskey(current_step_quadrant_counts, quadrant_coords)
+                current_step_quadrant_counts[quadrant_coords] = Dict(:n_low => 0, :n_high => 0)
+            end
+
+            if agent_obj isa LowIncome
+                current_step_quadrant_counts[quadrant_coords][:n_low] += 1
+            elseif agent_obj isa HighIncome
+                current_step_quadrant_counts[quadrant_coords][:n_high] += 1
+            end
+        end
+
+        all_quadrant_keys = sort(collect(keys(mean_quadrant_amenities_map)))
+        
+        for q_coords in all_quadrant_keys
+            n_low = get(current_step_quadrant_counts, q_coords, Dict(:n_low => 0))[:n_low]
+            n_high = get(current_step_quadrant_counts, q_coords, Dict(:n_high => 0))[:n_high]
+            mean_q_amenity = get(mean_quadrant_amenities_map, q_coords, 0.0)
+
+            push!(history_quadrant_step, current_step_number)
+            push!(history_quadrant_coords_x, q_coords[1])
+            push!(history_quadrant_coords_y, q_coords[2])
+            push!(history_quadrant_mean_amenity, mean_q_amenity)
+            push!(history_quadrant_n_low, n_low)
+            push!(history_quadrant_n_high, n_high)
+        end
+
+
+    end # Fine di _collect_all_data_for_current_step
+
+    # --- Raccogli dati per lo stato iniziale di questa fase ---
+    if n_steps_for_phase >= 0
+        _collect_all_data_for_current_step(input_model, initial_step_for_data)
+    end
+
+    # --- Ciclo di simulazione per questa fase ---
+    for s_phase_loop_idx in 1:n_steps_for_phase
+        absolute_step = initial_step_for_data + s_phase_loop_idx
+        
+        step!(input_model, current_agent_step!, current_model_step!)
+        
+        _collect_all_data_for_current_step(input_model, absolute_step)
+        
+        if s_phase_loop_idx % 10 == 0 || s_phase_loop_idx == n_steps_for_phase
+            println("Completato step di $phase_label: $s_phase_loop_idx / $n_steps_for_phase (Step assoluto: $absolute_step)")
+        end
+    end
+    println("--- Fine $phase_label ---")
+
+    # --- Creazione dei DataFrame finali ---
+    agent_data_df = DataFrame(
+        #step=history_agent_step,
+        #id=history_agent_id,
+        #agent_type=history_agent_type,
+        #utility=history_agent_utility,
+        #pos=history_agent_pos
+    )
+    
+    model_metrics_df = DataFrame(
+        step=history_model_step,
+        ratio_lh_inner=history_ratio_lh_inner,
+        ratio_lh_suburbs=history_ratio_lh_suburbs,
+        density_total_inner=history_density_total_inner,
+        density_total_suburbs=history_density_total_suburbs,
+        n_low_inner=history_n_low_inner,
+        n_high_inner=history_n_high_inner,
+        n_low_suburbs=history_n_low_suburbs,
+        n_high_suburbs=history_n_high_suburbs,
+        developer_status=history_developer_status,
+        mean_inner_city_rent=history_mean_inner_city_rent,
+        median_inner_city_rent=history_median_inner_city_rent,
+        n_houses_inner_city_rent_calc=history_n_houses_inner_city_rent_calc,
+        mean_income_inner_city=history_mean_income_inner_city,
+        median_income_inner_city=history_median_income_inner_city,
+        neighbour_segregation_index=history_neighbour_segregation_index,
+        amenity_segregation_index_low=history_amenity_segregation_index_low,
+        amenity_segregation_index_high=history_amenity_segregation_index_high,
+        #n_zero_utility = history_agent_zero_sat,
+
+        # --- MODIFICA 3: Aggiungi le nuove colonne al DataFrame finale ---
+        #dissimilarity_index = history_dissimilarity_index,
+        #exposure_index = history_exposure_index
+    )
+
+    # --- NUOVO: DataFrame per i dati dei quadranti ---
+    quadrant_data_df = DataFrame(
+        step=history_quadrant_step,
+        quadrant_coords_x=history_quadrant_coords_x,
+        quadrant_coords_y=history_quadrant_coords_y,
+        mean_quadrant_amenity=history_quadrant_mean_amenity,
+        n_low_quadrant=history_quadrant_n_low,
+        n_high_quadrant=history_quadrant_n_high
+    )
+    
+    # --- LA FUNZIONE ORA RESTITUISCE 3 DATAFRAME E IL MODELLO ---
+    return agent_data_df, model_metrics_df, quadrant_data_df, input_model
 end
