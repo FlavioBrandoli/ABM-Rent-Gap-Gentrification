@@ -13,8 +13,10 @@ The core of the model includes agent definitions, environment setup, simulation 
 
 - `agents.jl` – defines the agent types used in the simulation.
 - `model.jl` – contains the model initialization function and the step functions.
-- `utils.jl` – includes helper functions used to run and analyze the simulation.
+- `utils.jl` – includes a short set of helper functions used to run and analyze the simulation.
+- `Model_definitions_1.jl` – includes the complete list of functions used to run run simulations.
 - `examples.ipynb` – Jupyter notebook with a simple simulation run and example plots.
+- `multi_seed_simulations.ipynb` – Jupyter notebook with two cells to run multi-seed simulations and plot the results.
 - `Project.toml` / `Manifest.toml` – define the Julia environment for reproducibility.
 - `README.md` – project description and usage instructions.
 - `LICENSE` – open-source license (MIT) under which this project is distributed.
