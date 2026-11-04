@@ -37,7 +37,7 @@ function initialize_model(;
     public_housing_fraction = 0.05,
     public_housing_rent = 0.0,
     median_rent_percentage_threshold = 0.5,
-    public_housing_negative_spillover_boost = 2.0,
+    public_housing_negative_spillover_boost = 2.0,  # PROVIAMO A VARIARE QUELLO ORIGINALE ERA 2.0
     percentile_to_calculate = 0.10,
     public_housing_income_threshold = 30.0,
     public_housing_conversion_radius = 1,
@@ -286,7 +286,7 @@ function initialize_model(;
         :rent_age_decay => rent_age_decay, 
         :neighborhood_radius => 1, 
         :utility_weights_low => (financial=0.35, amenity=0.25, age=0.25, center=0.15, neighborhood=0.0), 
-        :utility_weights_high => (financial=0.25, amenity=0.25, age=0.35, center=0.15, neighborhood=0.0), 
+        :utility_weights_high => (financial=0.25, amenity=0.21, age=0.36, center=0.18, neighborhood=0.0), 
         
         :step => 0, 
         :rng => rng, 
