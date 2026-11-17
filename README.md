@@ -210,8 +210,21 @@ The outputs of those runs are in `results/v1/`.
 
 * **Fig. 1** (thermalization schematic): no script in this repository produces it.
 * **Fig. 2** (empirical validation): it compares the model with ACS rent and income series of gentrifying
-  ZIP codes and of control ZIP codes in the same cities. Those data and the code that assembles them are
-  not part of this repository.
+  ZIP codes and of control ZIP codes in the same cities. The data are public, but the code that assembles
+  them is not part of this repository. Sources:
+
+  * **Data**: American Community Survey 5-year estimates, US Census Bureau, for each year 2011–2020, at the
+    ZIP Code Tabulation Area level. Variables: median gross rent (`B25064_001E`) and median household income
+    (`B19013_001E`). Access through [data.census.gov](https://data.census.gov) (table IDs B25064 and B19013) or
+    the Census API (`https://api.census.gov/data/<year>/acs/acs5?get=B25064_001E,B19013_001E&for=zip%20code%20tabulation%20area:*`).
+    Rents and incomes were inflation-adjusted to 2020 dollars with CPI-U and indexed to 2011.
+  * **Gentrifying ZIP codes**: the list of the most gentrified US ZIP codes in Shawn M. Carter, CNBC, 6 March 2018
+    ("This LA Neighborhood Is the Most Gentrified in the US—and These Other Zip Codes Made the Top 10").
+  * **Control ZIP codes** (same cities, not gentrifying): *the list and its source are to be added here*; the
+    repository does not yet document them.
+
+  The Census API response format and the availability of ZCTA tables for each year should be checked against
+  the current Census documentation before use.
 * **Graphical abstract**: the figure is assembled in Keynote and TikZ around the result panel above. The
   Keynote file is not part of this repository.
 * The notebooks of the first version of the code (`ABM-original-backup`) are not included.
