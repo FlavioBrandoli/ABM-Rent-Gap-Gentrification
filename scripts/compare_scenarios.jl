@@ -84,22 +84,8 @@ end
 vlines!(ax2, [n_therm], color = :black, linestyle = :dash)
 axislegend(ax2, position = :lt, labelsize = 9)
 save(joinpath(FIGURES, "inner_city_comparison_$(tag).pdf"), fig)
-# single panels for the manuscript
-let f1 = Figure(size = (520, 400))
-    ax = Axis(f1[1, 1], xlabel = "Step", ylabel = "Inner-city median income")
-    for sc in ("none", "random", "rentgap"); curve!(ax, summ, sc, :median_income_inner_city); end
-    vlines!(ax, [n_therm], color = :black, linestyle = :dash); axislegend(ax, position = :lt)
-    save(joinpath(FIGURES, "median_income_comparison_$(tag).pdf"), f1)
-end
-let f1 = Figure(size = (520, 400))
-    ax = Axis(f1[1, 1], xlabel = "Step", ylabel = "Agents in the inner city")
-    for (sc, ls) in (("none", :solid), ("random", :dash), ("rentgap", :dot))
-        curve!(ax, summ, sc, :n_low_inner; color = :dodgerblue3, label = "Low income, $(sc_labels[sc])", linestyle = ls)
-        curve!(ax, summ, sc, :n_high_inner; color = :firebrick, label = "High income, $(sc_labels[sc])", linestyle = ls)
-    end
-    vlines!(ax, [n_therm], color = :black, linestyle = :dash); axislegend(ax, position = :lt, labelsize = 8)
-    save(joinpath(FIGURES, "number_agents_$(tag).pdf"), f1)
-end
+# single panels for the manuscript (Fig. 4a, 4b) are drawn by scripts/plot_fig4.jl,
+# which reads the summary written above and needs no rerun of the simulations.
 
 # segregation indices: free, rent-gap 0.06, rent-gap 0.10
 fig = Figure(size = (1000, 400))
