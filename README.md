@@ -56,6 +56,13 @@ further simulation and take seconds to a few minutes each.
 archive is deposited, its link and checksum will be given here and the files go into `results/`
 unchanged. Until then, reproduce them with the commands below.
 
+The CSV outputs can be stored gzipped (`results/**/*.csv.gz`, about a third of the size). The scripts
+read plain `.csv` files, so decompress them before use, keeping the archives if you want:
+
+```bash
+find results -name '*.csv.gz' -exec gunzip -k {} +
+```
+
 | Manuscript | Content | Command | Output |
 |---|---|---|---|
 | Fig. 3 | City maps under the three scenarios | `julia --project scripts/city_maps.jl --seed=580 --fraction=0.07` | `figures/PH_random_seed580_f0.07.pdf`, `figures/PH_rentgap_seed580_f0.07.pdf`, `figures/city_maps_seed580_f0.07.pdf` |
