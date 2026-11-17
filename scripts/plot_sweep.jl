@@ -28,19 +28,32 @@ function panel!(ax, summary, ycol, yerr)
         isempty(d) && continue
         errorbars!(ax, d.ph_fraction, d[!, ycol], d[!, yerr], color = colors[pol], whiskerwidth = 6)
         scatterlines!(ax, d.ph_fraction, d[!, ycol], color = colors[pol], label = labels[pol],
-                      markersize = 9, linewidth = 2)
+                      markersize = 8, linewidth = 3)
     end
 end
 
 n = length(tags)
-fig = Figure(size = (520 * min(n, 2), 400 * cld(n, 2)))
+# Multi-panel layout is sized for the manuscript: the canvas is 340x280 px per panel and is
+# printed at about 0.65 of its size (0.85 of the column width), so the 20 px labels read at
+# about 10 pt. Use at most 5 panels per figure (2 columns, 3 rows).
+fig = Figure(size = (340 * min(n, 2), 280 * cld(n, 2) + (n > 1 ? 50 : 0)))
+axs = Any[]
 for (k, tag) in enumerate(tags)
     s = CSV.read(joinpath(RESULTS, "sweep_$(tag)_summary.csv"), DataFrame)
     row, col = cld(k, 2), mod1(k, 2)
-    ax = Axis(fig[row, col], xlabel = "Public housing fraction f", ylabel = "Final inner-city median income",
-              title = n > 1 ? panel_labels[k] : "", titlesize = 13)
+    ax = Axis(fig[row, col], xlabel = "Public housing fraction f", ylabel = n > 1 ? "Final median income" : "Final inner-city median income",
+              title = n > 1 ? panel_labels[k] : "", titlesize = 20,
+              xlabelsize = 20, ylabelsize = 20, xticklabelsize = 18, yticklabelsize = 18)
     panel!(ax, s, :mean_final_income, :sem_final_income)
-    k == 1 && axislegend(ax, position = :rt)
+    push!(axs, ax)
+end
+legend_ax = axs[1]
+# one legend for all panels: in the empty cell of an odd grid (5 panels: row 3, column 2),
+# otherwise in a row below the grid
+if n == 1
+    axislegend(legend_ax, position = :rb, labelsize = 18)
+else
+    Legend(fig[cld(n, 2) + 1, 1:2], legend_ax, labelsize = 18, orientation = :horizontal, tellwidth = false)
 end
 save(joinpath(FIGURES, "final_median_income_$(out).pdf"), fig)
 save(joinpath(FIGURES, "final_median_income_$(out).png"), fig, px_per_unit = 2)
