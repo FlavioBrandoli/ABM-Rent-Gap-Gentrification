@@ -1,0 +1,11 @@
+results/**/*_steps.csv
+results/*_steps.csv
+*.jld2
+.DS_Store
+env110/
+*.ipynb_checkpoints
+results/v1/julia1.13/*_steps.csv
+
+# CSV outputs are not versioned: regenerate them with the scripts (see README)
+*.csv
+*.csv.gz
